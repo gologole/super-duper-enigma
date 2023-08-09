@@ -1,26 +1,27 @@
-package http
+package htp
 
 import (
 	"encoding/json"
 	"fmt"
+	service "forummodule/internal/service"
+	"log"
 	"net/http"
 )
 
-const index = "index.html"
-
 //запуск через горутину
 
-func handlereg() {
+func Handlereg() {
+	fmt.Println("server is working")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, index)
+		http.ServeFile(w, r, "html/registration.html")
 	})
 	http.HandleFunc("/handleClick", handleJSONRequest)
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		return
+		log.Fatal("", err)
 	}
-	fmt.Println("Server is starting")
+
 }
 
 func handleJSONRequest(w http.ResponseWriter, r *http.Request) {
@@ -29,9 +30,8 @@ func handleJSONRequest(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
 	// Decode the JSON packet from the request body
-	var data MyData
+	var data service.AccountData
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -39,15 +39,18 @@ func handleJSONRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Process the JSON data
-	fmt.Println("Received JSON data:")
-	fmt.Println("Login:", data.Login)
-	fmt.Println("Password:", data.Password)
-
-	// Send a response
-	response := map[string]interface{}{
-		"message": "JSON received successfully",
+	loginresult := service.LogIn(data)
+	var response map[string]interface{}
+	if loginresult == true {
+		response = map[string]interface{}{
+			"account LogIN": "successfully",
+		}
+	} else {
+		response = map[string]interface{}{
+			"account LogIN": " not successfully",
+		}
 	}
+	// Send a response
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
